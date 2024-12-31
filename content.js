@@ -7,23 +7,21 @@ function registerSchedule() {
 }
   
 async function setReminders() {
+
     console.log("Setting reminders");
     let scheduleList=document.querySelector("#content > section > div.scheduleList.gContentCardShadow")
     let dailyScheduleList=scheduleList.childNodes[3]
     for (let dailyItem of dailyScheduleList.childNodes) {
-        let [year, month, day] = dailyItem.childNodes[0].getAttribute('datetime').split(' ').map(item => String(parseInt(item.slice(0, -1)), 10));
-        console.log(year, month, day)
+        let [year, month, day] = dailyItem.childNodes[0].getAttribute('datetime').split(' ').map(item => parseInt(item.slice(0, -1)), 10);
         const eventList=dailyItem.childNodes[2];
         for (let scheduleItem of eventList.childNodes) {
             const title = scheduleItem.querySelector('.title');
             if (title && title.textContent === '정기대관') {
                 async function create(is_today) {
                     scheduleItem.click();
-                    console.log(scheduleItem);
-                    await sleep(500);
+                    await sleep(750);
                     
                     let moreOptionsButton = document.querySelector("#wrap > div.layerContainerView > div > section > div > div:nth-child(1) > div > div > div.scheduleHead._scheduleHead > div.option > button");
-                    console.log(moreOptionsButton);
                     moreOptionsButton.click();
                     await sleep(100);
 
@@ -32,7 +30,11 @@ async function setReminders() {
                     await sleep(750);
 
                     let payload = document.querySelector("#wrap > div.layerContainerView > div:nth-child(2) > div > section > div > div > div > div.postWriteForm._postWriteForm.-standby > div > p:nth-child(1)");
-                    payload.innerText = "오늘 대관투표는 17:30까지입니다" + payload.innerText;
+                    if(is_today){
+                        payload.innerText = "오늘 대관투표는 17:30까지입니다" + payload.innerText;
+                    } else{
+                        payload.innerText = "내일 대관투표는 17:30 까지입니다" + payload.innerText;
+                    }
 
                     let writeSettingsButton = document.querySelector("#wrap > div.layerContainerView > div:nth-child(2) > div.layer_wrap.ui-draggable.ui-draggable-handle.skin6 > section > div > div > div > div.buttonArea._bottomToolbar > div > div.settingArea > button");
                     writeSettingsButton.click();
@@ -50,10 +52,22 @@ async function setReminders() {
                         await sleep(100);
                     }
 
-                    document.querySelector(`td._td a[data-day="${day}"]`).click();
+                    if(is_today){
+                        document.querySelector(`td._td a[data-day="${day}"]`).click();
+                    } else{
+                        if(day == '1'){
+                            console.log("1일 대관에 대한 전날 리마인더는 직접 작성하세요!");
+                        } else{
+                            document.querySelector(`td._td a[data-day="${day-1}"]`).click();
+                        }
+                    }
                     await sleep(100);
 
-                    document.querySelector('.btnDropDownItem[data-time="오전 11:00"]').click();
+                    if(is_today){
+                        document.querySelector('.btnDropDownItem[data-time="오전 11:00"]').click();
+                    } else{
+                        document.querySelector('.btnDropDownItem[data-time="오후 7:00"]').click();
+                    }
                     await sleep(100);
 
                     let confirmButton = document.querySelector("#wrap > div.layerContainerView > div:nth-child(3) > section > div > footer > button.uButton.-confirm._btnComplete");
@@ -62,10 +76,21 @@ async function setReminders() {
 
                     let uploadButton = document.querySelector("#wrap > div.layerContainerView > div:nth-child(2) > div > section > div > div > div > div.buttonArea._bottomToolbar > div > div.buttonSubmit > button");
                     uploadButton.click();
-                    await sleep(1000);
+                    await sleep(500);
+                    await (async function handleAlert() {
+                        const skipButton = document.querySelector('section[data-viewname="DAlertModalView"] > div > div.modalFooter > button')
+                        if (skipButton) {
+                            skipButton.click();
+                            await sleep(60000); // sleep for 1 minute
+                            let uploadButton = document.querySelector("#wrap > div.layerContainerView > div:nth-child(2) > div > section > div > div > div > div.buttonArea._bottomToolbar > div > div.buttonSubmit > button");
+                            uploadButton.click();
+                            await sleep(500);
+                        } 
+                    })();
+                    
                 }
-                await create(true);
-                await create(false);
+                await create(true);  
+                await create(false);  
                 
             }
         }
